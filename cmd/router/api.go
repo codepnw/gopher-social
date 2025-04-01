@@ -5,16 +5,26 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/codepnw/gopher-social/internal/store"
 	"github.com/gin-gonic/gin"
 )
 
 type Application struct {
-	Config Config
+	Config   Config
+	Store    store.Storage
+	DBConfig DBConfig
 }
 
 type Config struct {
 	Addr    string
 	Version string
+}
+
+type DBConfig struct {
+	Addr         string
+	MaxOpenConns int
+	MaxIdleConns int
+	MaxIdleTime  string
 }
 
 func (app *Application) Run(r *gin.Engine) error {
