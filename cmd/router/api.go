@@ -16,8 +16,10 @@ type Application struct {
 }
 
 type Config struct {
-	Addr    string
-	Version string
+	Addr       string
+	AppVersion string
+	ApiVersion string
+	Env        string
 }
 
 type DBConfig struct {

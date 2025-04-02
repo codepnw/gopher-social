@@ -8,4 +8,16 @@ type Post struct {
 	Tags      []string `json:"tags"`
 	CreatedAt string   `json:"created_at"`
 	UpdatedAt string   `json:"updated_at"`
+	Comments []Comment `json:"comments"`
+}
+
+type CreatePostPayload struct {
+	Title     string   `json:"title" binding:"required,max=100"`
+	Content   string   `json:"content" binding:"required,max=300"`
+	Tags      []string `json:"tags"`
+}
+
+type UpdatePostPayload struct {
+	Title     *string   `json:"title" binding:"omitempty,max=100"`
+	Content   *string   `json:"content" binding:"omitempty,max=300"`
 }

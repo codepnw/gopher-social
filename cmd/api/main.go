@@ -18,8 +18,10 @@ func main() {
 	}
 
 	cfg := router.Config{
-		Addr:    env.GetString("APP_ADDR", ":8080"),
-		Version: env.GetString("APP_VERSION", "v1"),
+		Addr:       env.GetString("APP_ADDR", ":8080"),
+		ApiVersion: env.GetString("APP_API_VERSION", "v1"),
+		AppVersion: env.GetString("APP_VERSION", "0.0.1"),
+		Env:        env.GetString("APP_ENV", "development"),
 	}
 
 	dbConfig := router.DBConfig{

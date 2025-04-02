@@ -7,5 +7,11 @@ import (
 )
 
 func (app *Application) HealthCheckHandler(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"message": "OK!"})
+	data := map[string]string{
+		"status": "ok",
+		"env":    app.Config.Env,
+		"version": app.Config.AppVersion,
+	}
+
+	c.JSON(http.StatusOK, data)
 }
