@@ -21,3 +21,7 @@ func notFoundResponse(c *gin.Context, err error) {
 	log.Printf("not found error: %s path: %s error: %s", c.Request.Method, c.Request.URL.Path, err.Error())
 	c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 }
+
+func responseData(c *gin.Context, status int, data any) {
+	c.JSON(status, gin.H{"data": data})
+}

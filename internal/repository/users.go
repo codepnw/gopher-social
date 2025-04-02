@@ -24,6 +24,9 @@ func (r *userRepository) Create(ctx context.Context, user *entity.User) error {
 		INSERT INTO users (username, email, password)
 		VALUES ($1, $2, $3) RETURNING id, created_at
 	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
 	err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -31,7 +34,7 @@ func (r *userRepository) Create(ctx context.Context, user *entity.User) error {
 		user.Email,
 		user.Password,
 	).Scan(&user.ID, &user.CreatedAt)
-	
+
 	if err != nil {
 		return err
 	}

@@ -53,7 +53,7 @@ func (h *postHandler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, post)
+	responseData(c, http.StatusCreated, post)
 }
 
 func (h *postHandler) GetPostHandler(c *gin.Context) {
@@ -68,7 +68,7 @@ func (h *postHandler) GetPostHandler(c *gin.Context) {
 
 	post.Comments = comments
 
-	c.JSON(http.StatusOK, post)
+	responseData(c, http.StatusOK, post)
 }
 
 func (h *postHandler) DeletePostHandler(c *gin.Context) {
@@ -85,7 +85,7 @@ func (h *postHandler) DeletePostHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusNoContent, nil)
+	responseData(c, http.StatusNoContent, "post deleted")
 }
 
 func (h *postHandler) UpdatePostHandler(c *gin.Context) {
@@ -112,7 +112,7 @@ func (h *postHandler) UpdatePostHandler(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, post)
+	responseData(c, http.StatusOK, post)
 }
 
 func (h *postHandler) PostContextMiddleware() gin.HandlerFunc {

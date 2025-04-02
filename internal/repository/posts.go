@@ -29,6 +29,9 @@ func (r *postRepository) Create(ctx context.Context, post *entity.Post) error {
 		INSERT INTO posts (title, content, user_id, tags)
 		VALUES ($1, $2, $3, $4) RETURNING id, created_at, updated_at
 	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
 	err := r.db.QueryRowContext(
 		ctx,
 		query,
@@ -47,9 +50,12 @@ func (r *postRepository) Create(ctx context.Context, post *entity.Post) error {
 
 func (r *postRepository) GetByID(ctx context.Context, id int64) (*entity.Post, error) {
 	query := `
-		SELECT id, title, content, user_id, tags, created_at, updated_at
+		SELECT id, title, content, user_id, tags, created_at, updated_at, version
 		FROM posts WHERE id = $1
 	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
 	var post entity.Post
 
 	err := r.db.QueryRowContext(ctx, query, id).Scan(
@@ -60,6 +66,7 @@ func (r *postRepository) GetByID(ctx context.Context, id int64) (*entity.Post, e
 		pq.Array(&post.Tags),
 		&post.CreatedAt,
 		&post.UpdatedAt,
+		&post.Version,
 	)
 	if err != nil {
 		switch {
@@ -74,6 +81,9 @@ func (r *postRepository) GetByID(ctx context.Context, id int64) (*entity.Post, e
 }
 
 func (r *postRepository) Delete(ctx context.Context, postID int64) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
 	res, err := r.db.ExecContext(ctx, "DELETE FROM posts WHERE id = $1", postID)
 	if err != nil {
 		return err
@@ -93,12 +103,28 @@ func (r *postRepository) Delete(ctx context.Context, postID int64) error {
 
 func (r *postRepository) Update(ctx context.Context, post *entity.Post) error {
 	query := `
-		UPDATE posts SET title = $1, content = $2
-		WHERE id = $3
+		UPDATE posts SET title = $1, content = $2, version = version + 1
+		WHERE id = $3 AND version = $4
+		RETURNING version
 	`
-	_, err := r.db.ExecContext(ctx, query, post.Title, post.Content, post.ID)
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	err := r.db.QueryRowContext(
+		ctx,
+		query,
+		post.Title,
+		post.Content,
+		post.ID,
+		post.Version,
+	).Scan(&post.Version)
 	if err != nil {
-		return err
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return ErrNotFound
+		default:
+			return err
+		}
 	}
 
 	return nil
