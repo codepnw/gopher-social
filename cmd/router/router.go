@@ -17,11 +17,25 @@ func (app *Application) Routes() *gin.Engine {
 
 		postsID := posts.Group("/:id")
 		{
+			// Middleware
 			postsID.Use(app.Store.Posts.PostContextMiddleware())
 
 			postsID.GET("/", app.Store.Posts.GetPostHandler)
 			postsID.PATCH("/", app.Store.Posts.UpdatePostHandler)
 			postsID.DELETE("/", app.Store.Posts.DeletePostHandler)
+		}
+	}
+
+	users := v.Group("/users")
+	{	
+		usersID := users.Group("/:id")
+		{	
+			// Middleware
+			usersID.Use(app.Store.Users.UserContextMiddleware())
+
+			usersID.GET("/", app.Store.Users.GetUserHandler)
+			usersID.PUT("/follow", app.Store.Users.FollowUserHandler)
+			usersID.PUT("/unfollow", app.Store.Users.UnfollowUserHandler)
 		}
 	}
 

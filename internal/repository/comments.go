@@ -8,6 +8,7 @@ import (
 )
 
 type CommentRepository interface {
+	Create(ctx context.Context, comment *entity.Comment) error
 	GetByPostID(ctx context.Context, postID int64) ([]entity.Comment, error)
 }
 
@@ -28,7 +29,7 @@ func (r *commentRepository) GetByPostID(ctx context.Context, postID int64) ([]en
 	`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
-	
+
 	rows, err := r.db.QueryContext(ctx, query, postID)
 	if err != nil {
 		return nil, err
@@ -55,4 +56,27 @@ func (r *commentRepository) GetByPostID(ctx context.Context, postID int64) ([]en
 		comments = append(comments, c)
 	}
 	return comments, nil
+}
+
+func (r *commentRepository) Create(ctx context.Context, comment *entity.Comment) error {
+	query := `
+		INSERT INTO comments (post_id, user_id, content)
+		VALUES ($1, $2, $3) RETURNING id, created_at
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	err := r.db.QueryRowContext(
+		ctx, 
+		query,
+		comment.PostID,
+		comment.UserID,
+		comment.Content,
+	).Scan(&comment.ID, &comment.CreatedAt)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

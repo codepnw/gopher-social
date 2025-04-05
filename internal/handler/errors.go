@@ -17,6 +17,11 @@ func badRequestResponse(c *gin.Context, err error) {
 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 }
 
+func conflictResponse(c *gin.Context, err error) {
+	log.Printf("conflict error: %s path: %s error: %s", c.Request.Method, c.Request.URL.Path, err.Error())
+	c.JSON(http.StatusConflict, gin.H{"error": err.Error()})
+}
+
 func notFoundResponse(c *gin.Context, err error) {
 	log.Printf("not found error: %s path: %s error: %s", c.Request.Method, c.Request.URL.Path, err.Error())
 	c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})

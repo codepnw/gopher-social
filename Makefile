@@ -10,3 +10,6 @@ migrate-up:
 
 migrate-down:
 	@migrate -database $(DB_ADDR) -path $(MIGRATIONS_PATH) down $(filter-out $@,$(MAKECMDGOALS))
+
+seed:
+	@go run internal/database/seed/main.go
