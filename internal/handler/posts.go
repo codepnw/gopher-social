@@ -18,6 +18,7 @@ type PostsHandler interface {
 	GetPostHandler(c *gin.Context)
 	UpdatePostHandler(c *gin.Context)
 	DeletePostHandler(c *gin.Context)
+	GetUserFeedHandler(c *gin.Context)
 	PostContextMiddleware() gin.HandlerFunc
 }
 
@@ -113,6 +114,18 @@ func (h *postHandler) UpdatePostHandler(c *gin.Context) {
 	}
 
 	responseData(c, http.StatusOK, post)
+}
+
+func (h *postHandler) GetUserFeedHandler(c *gin.Context) {
+	// pagination, filters 
+
+	feed, err := h.postRepo.GetUserFeed(c, int64(25))
+	if err != nil {
+		internalServerError(c, err)
+		return
+	}
+
+	responseData(c, http.StatusOK, feed)
 }
 
 func (h *postHandler) PostContextMiddleware() gin.HandlerFunc {

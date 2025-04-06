@@ -27,9 +27,9 @@ func (app *Application) Routes() *gin.Engine {
 	}
 
 	users := v.Group("/users")
-	{	
+	{
 		usersID := users.Group("/:id")
-		{	
+		{
 			// Middleware
 			usersID.Use(app.Store.Users.UserContextMiddleware())
 
@@ -37,6 +37,7 @@ func (app *Application) Routes() *gin.Engine {
 			usersID.PUT("/follow", app.Store.Users.FollowUserHandler)
 			usersID.PUT("/unfollow", app.Store.Users.UnfollowUserHandler)
 		}
+		users.GET("/feed", app.Store.Posts.GetUserFeedHandler)
 	}
 
 	return r
