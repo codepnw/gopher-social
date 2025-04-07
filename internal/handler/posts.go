@@ -117,9 +117,23 @@ func (h *postHandler) UpdatePostHandler(c *gin.Context) {
 }
 
 func (h *postHandler) GetUserFeedHandler(c *gin.Context) {
-	// pagination, filters 
+	// pagination 
+	fq := entity.PaginatedFeedQuery{
+		Limit: 20,
+		Offset: 0,
+		Sort: "desc",
+	}
 
-	feed, err := h.postRepo.GetUserFeed(c, int64(25))
+	fq, err := fq.Parse(c)
+	if err != nil {
+		badRequestResponse(c, err)
+		return
+	}
+
+	// filters
+	
+
+	feed, err := h.postRepo.GetUserFeed(c, int64(25), fq)
 	if err != nil {
 		internalServerError(c, err)
 		return
