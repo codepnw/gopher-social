@@ -1,7 +1,12 @@
 package router
 
 import (
+	"context"
+	"errors"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/codepnw/gopher-social/internal/store"
@@ -39,7 +44,34 @@ func (app *Application) Run(r *gin.Engine) error {
 		IdleTimeout:  time.Minute,
 	}
 
-	app.Logger.Infow("server has started", "port", app.Config.Addr)
+	shutdown := make(chan error)
 
-	return server.ListenAndServe()
+	go func() {
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+		s := <-quit
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+
+		app.Logger.Infow("signal caught", "signal", s.String())
+
+		shutdown <-server.Shutdown(ctx)
+	}()
+
+	app.Logger.Infow("server has started", "port", app.Config.Addr, "env", app.Config.Env)
+
+	err := server.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+
+	err = <-shutdown
+	if err != nil {
+		return err
+	}
+
+	app.Logger.Infow("server has stopped", "port", app.Config.Addr, "env", app.Config.Env)
+
+	return nil
 }
