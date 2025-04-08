@@ -1,18 +1,19 @@
 package router
 
 import (
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/codepnw/gopher-social/internal/store"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type Application struct {
 	Config   Config
 	Store    store.Storage
 	DBConfig DBConfig
+	Logger   *zap.SugaredLogger
 }
 
 type Config struct {
@@ -31,14 +32,14 @@ type DBConfig struct {
 
 func (app *Application) Run(r *gin.Engine) error {
 	server := &http.Server{
-		Addr:         app.Config.Addr,
+		Addr:         ":" + app.Config.Addr,
 		Handler:      r,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
 		IdleTimeout:  time.Minute,
 	}
 
-	log.Printf("server has started at %s", app.Config.Addr)
+	app.Logger.Infow("server has started", "port", app.Config.Addr)
 
 	return server.ListenAndServe()
 }

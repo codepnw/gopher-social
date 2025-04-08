@@ -7,6 +7,7 @@ import (
 	"github.com/codepnw/gopher-social/internal/database"
 	"github.com/codepnw/gopher-social/internal/env"
 	"github.com/codepnw/gopher-social/internal/store"
+	"github.com/codepnw/gopher-social/internal/utils/logger"
 	"github.com/joho/godotenv"
 )
 
@@ -31,13 +32,20 @@ func main() {
 		MaxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 	}
 
+	// Logger
+	logger, err := logger.InitLogger()
+	if err != nil {
+		log.Panic(err)
+	}
+	defer logger.Sync()
+
 	// Database
 	db, err := database.NewDatabase(dbConfig.Addr, dbConfig.MaxOpenConns, dbConfig.MaxIdleConns, dbConfig.MaxIdleTime)
 	if err != nil {
 		log.Panic(err)
 	}
 	defer db.Close()
-	log.Println("database connected...")
+	logger.Info("database connected...")
 
 	// Storage
 	store := store.NewStorage(db)
@@ -46,7 +54,8 @@ func main() {
 		Config:   cfg,
 		Store:    store,
 		DBConfig: dbConfig,
+		Logger:   logger,
 	}
 
-	log.Fatal(app.Run(app.Routes()))
+	logger.Fatal(app.Run(app.Routes()))
 }

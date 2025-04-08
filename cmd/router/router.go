@@ -3,6 +3,8 @@ package router
 import "github.com/gin-gonic/gin"
 
 func (app *Application) Routes() *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+
 	r := gin.Default()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
