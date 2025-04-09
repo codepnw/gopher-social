@@ -28,5 +28,4 @@ go.work
 
 dev.env
 tmp
-internal/database/migrations
 note.txt
