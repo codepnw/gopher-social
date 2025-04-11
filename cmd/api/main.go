@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"time"
 
 	"github.com/codepnw/gopher-social/cmd/router"
 	"github.com/codepnw/gopher-social/internal/database"
@@ -23,6 +24,7 @@ func main() {
 		ApiVersion: env.GetString("APP_API_VERSION", "v1"),
 		AppVersion: env.GetString("APP_VERSION", "0.0.1"),
 		Env:        env.GetString("APP_ENV", "development"),
+		MailExp:    time.Hour * 24 * 3, // 3 days
 	}
 
 	dbConfig := router.DBConfig{

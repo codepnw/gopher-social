@@ -110,15 +110,20 @@ func seed(db *sql.DB) {
 	userRepo := repository.NewUserRepository(db)
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
+
 	ctx := context.Background()
+	tx, _ := db.BeginTx(ctx, nil)
 
 	users := generateUsers(20)
 	for _, user := range users {
-		if err := userRepo.Create(ctx, user); err != nil {
+		if err := userRepo.Create(ctx, tx, user); err != nil {
+			tx.Rollback()
 			log.Println("error creating user:", err)
 			return
 		}
 	}
+	
+	tx.Commit()
 
 	posts := generatePosts(50, users)
 	for _, post := range posts {

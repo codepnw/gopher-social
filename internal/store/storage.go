@@ -8,8 +8,8 @@ import (
 )
 
 type Storage struct {
-	Posts handler.PostsHandler
-	Users handler.UserHandler
+	Posts          handler.PostsHandler
+	Users          handler.UserHandler
 }
 
 func NewStorage(db *sql.DB) Storage {

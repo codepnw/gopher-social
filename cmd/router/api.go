@@ -26,6 +26,7 @@ type Config struct {
 	AppVersion string
 	ApiVersion string
 	Env        string
+	MailExp    time.Duration
 }
 
 type DBConfig struct {
@@ -51,12 +52,12 @@ func (app *Application) Run(r *gin.Engine) error {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		s := <-quit
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
 		app.Logger.Infow("signal caught", "signal", s.String())
 
-		shutdown <-server.Shutdown(ctx)
+		shutdown <- server.Shutdown(ctx)
 	}()
 
 	app.Logger.Infow("server has started", "port", app.Config.Addr, "env", app.Config.Env)

@@ -30,6 +30,8 @@ func (app *Application) Routes() *gin.Engine {
 
 	users := v.Group("/users")
 	{
+		users.PUT("/activate/:token", app.Store.Users.ActivateUserHandler)
+
 		usersID := users.Group("/:id")
 		{
 			// Middleware
@@ -40,6 +42,11 @@ func (app *Application) Routes() *gin.Engine {
 			usersID.PUT("/unfollow", app.Store.Users.UnfollowUserHandler)
 		}
 		users.GET("/feed", app.Store.Posts.GetUserFeedHandler)
+	}
+
+	auth := v.Group("/auth")
+	{
+		auth.POST("/register", app.Store.Users.RegisterUserHandler)
 	}
 
 	return r
