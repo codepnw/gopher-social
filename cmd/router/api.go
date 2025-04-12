@@ -9,36 +9,24 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/codepnw/gopher-social/cmd/config"
 	"github.com/codepnw/gopher-social/internal/store"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 type Application struct {
-	Config   Config
-	Store    store.Storage
-	DBConfig DBConfig
-	Logger   *zap.SugaredLogger
-}
-
-type Config struct {
-	Addr       string
-	AppVersion string
-	ApiVersion string
-	Env        string
-	MailExp    time.Duration
-}
-
-type DBConfig struct {
-	Addr         string
-	MaxOpenConns int
-	MaxIdleConns int
-	MaxIdleTime  string
+	Config  config.Config
+	Store  store.Storage
+	Logger *zap.SugaredLogger
 }
 
 func (app *Application) Run(r *gin.Engine) error {
+	addr := app.Config.App.Addr
+	env := app.Config.App.Env
+
 	server := &http.Server{
-		Addr:         ":" + app.Config.Addr,
+		Addr:         ":" + addr,
 		Handler:      r,
 		WriteTimeout: time.Second * 30,
 		ReadTimeout:  time.Second * 10,
@@ -60,7 +48,7 @@ func (app *Application) Run(r *gin.Engine) error {
 		shutdown <- server.Shutdown(ctx)
 	}()
 
-	app.Logger.Infow("server has started", "port", app.Config.Addr, "env", app.Config.Env)
+	app.Logger.Infow("server has started", "port", addr, "env", env)
 
 	err := server.ListenAndServe()
 	if errors.Is(err, http.ErrServerClosed) {
@@ -72,7 +60,7 @@ func (app *Application) Run(r *gin.Engine) error {
 		return err
 	}
 
-	app.Logger.Infow("server has stopped", "port", app.Config.Addr, "env", app.Config.Env)
+	app.Logger.Infow("server has stopped", "port", addr, "env", env)
 
 	return nil
 }

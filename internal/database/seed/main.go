@@ -9,7 +9,7 @@ import (
 
 	"github.com/codepnw/gopher-social/internal/database"
 	"github.com/codepnw/gopher-social/internal/entity"
-	"github.com/codepnw/gopher-social/internal/env"
+	"github.com/codepnw/gopher-social/internal/utils/env"
 	"github.com/codepnw/gopher-social/internal/repository"
 	"github.com/joho/godotenv"
 )

@@ -18,6 +18,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id int64) (*entity.User, error)
 	Follow(ctx context.Context, followerID, userID int64) error
 	Unfollow(ctx context.Context, followerID, userID int64) error
+	Delete(ctx context.Context, userID int64) error
 }
 
 type userRepository struct {
@@ -202,6 +203,32 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*entity.User, e
 	}
 
 	return &user, nil
+}
+
+func (r *userRepository) Delete(ctx context.Context, userID int64) error {
+	return withTx(ctx, r.db, func(tx *sql.Tx) error {
+		if err := r.delete(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		if err := r.deleteUserInvitations(ctx, tx, userID); err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
+func (r *userRepository) delete(ctx context.Context, tx *sql.Tx, userID int64) error {
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	_, err := tx.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
+	if err != nil {
+		return  err
+	}
+
+	return nil
 }
 
 func (r *userRepository) Follow(ctx context.Context, followerID, userID int64) error {

@@ -9,7 +9,7 @@ func (app *Application) Routes() *gin.Engine {
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
 
-	v := r.Group("/" + app.Config.ApiVersion)
+	v := r.Group("/" + app.Config.App.ApiVersion)
 
 	v.GET("/health", app.HealthCheckHandler)
 

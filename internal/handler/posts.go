@@ -4,10 +4,10 @@ import (
 	"errors"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/codepnw/gopher-social/internal/entity"
 	"github.com/codepnw/gopher-social/internal/repository"
-	"github.com/codepnw/gopher-social/internal/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -106,7 +106,7 @@ func (h *postHandler) UpdatePostHandler(c *gin.Context) {
 		post.Content = *payload.Content
 	}
 
-	post.UpdatedAt = utils.TimeString()
+	post.UpdatedAt = time.Now().String()
 
 	if err := h.postRepo.Update(c, post); err != nil {
 		internalServerError(c, err)
@@ -117,11 +117,11 @@ func (h *postHandler) UpdatePostHandler(c *gin.Context) {
 }
 
 func (h *postHandler) GetUserFeedHandler(c *gin.Context) {
-	// pagination 
+	// pagination
 	fq := entity.PaginatedFeedQuery{
-		Limit: 20,
+		Limit:  20,
 		Offset: 0,
-		Sort: "desc",
+		Sort:   "desc",
 	}
 
 	fq, err := fq.Parse(c)
@@ -131,7 +131,6 @@ func (h *postHandler) GetUserFeedHandler(c *gin.Context) {
 	}
 
 	// filters
-	
 
 	feed, err := h.postRepo.GetUserFeed(c, int64(25), fq)
 	if err != nil {

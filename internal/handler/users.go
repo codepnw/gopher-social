@@ -3,12 +3,15 @@ package handler
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
+	"github.com/codepnw/gopher-social/cmd/config"
 	"github.com/codepnw/gopher-social/internal/entity"
 	"github.com/codepnw/gopher-social/internal/repository"
+	"github.com/codepnw/gopher-social/internal/utils/logger"
+	"github.com/codepnw/gopher-social/internal/utils/mailer"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -25,11 +28,17 @@ type UserHandler interface {
 }
 
 type userHandler struct {
-	repo repository.UserRepository
+	cfg    config.Config
+	repo   repository.UserRepository
+	mailer mailer.MailtrapClient
 }
 
-func NewUserHandler(repo repository.UserRepository) UserHandler {
-	return &userHandler{repo: repo}
+func NewUserHandler(cfg config.Config, repo repository.UserRepository, mailer mailer.MailtrapClient) UserHandler {
+	return &userHandler{
+		cfg:    cfg,
+		repo:   repo,
+		mailer: mailer,
+	}
 }
 
 func (h *userHandler) RegisterUserHandler(c *gin.Context) {
@@ -55,9 +64,7 @@ func (h *userHandler) RegisterUserHandler(c *gin.Context) {
 	hashToken := hex.EncodeToString(hash[:])
 
 	// create invite user
-	// TODO: get exp from config later
-	exp := time.Hour * 24 * 3
-	err := h.repo.CreateAndInvite(c, user, hashToken, exp)
+	err := h.repo.CreateAndInvite(c, user, hashToken, h.cfg.Mail.Exp)
 	if err != nil {
 		switch err {
 		case repository.ErrDuplicateEmail:
@@ -71,8 +78,34 @@ func (h *userHandler) RegisterUserHandler(c *gin.Context) {
 	}
 
 	userToken := entity.UserWithToken{
-		User: user,
+		User:  user,
 		Token: plainToken,
+	}
+
+	activationURL := fmt.Sprintf("%s/confirm/%s", h.cfg.App.FrontendURL, plainToken)
+
+	isProdEnv := h.cfg.App.Env == "production"
+
+	vars := struct {
+		Username      string
+		ActivationURL string
+	}{
+		Username:      user.Username,
+		ActivationURL: activationURL,
+	}
+
+	// send mail
+	_, err = h.mailer.Send(mailer.UserWelcomeTemplate, user.Username, user.Email, vars, !isProdEnv)
+	if err != nil {
+		logger.Error(c, "error sending welcome email", err)
+
+		// rollback user creation if email fails
+		if err := h.repo.Delete(c, user.ID); err != nil {
+			logger.Error(c, "error deleting user", err)
+		}
+
+		internalServerError(c, err)
+		return
 	}
 
 	responseData(c, http.StatusCreated, userToken)
