@@ -10,6 +10,15 @@ type Config struct {
 	App  AppConfig
 	DB   DBConfig
 	Mail MailConfig
+	Auth AuthConfig
+}
+
+type AuthConfig struct {
+	BasicUser     string
+	BasicPassword string
+	JWTSecret     string
+	JWTExp        time.Duration
+	JWTIss        string
 }
 
 type AppConfig struct {
@@ -57,9 +66,18 @@ func InitConfig() Config {
 		FromEmail: env.GetString("FROM_EMAIL", ""),
 	}
 
+	auth := AuthConfig{
+		BasicUser:     env.GetString("AUTH_BASIC_USER", ""),
+		BasicPassword: env.GetString("AUTH_BASIC_PASSWORD", ""),
+		JWTSecret:     env.GetString("AUTH_JWT_SECRET", ""),
+		JWTExp:        time.Hour * 24 * 3,
+		JWTIss:        "gophersocial",
+	}
+
 	return Config{
 		App:  app,
 		DB:   db,
 		Mail: mail,
+		Auth: auth,
 	}
 }

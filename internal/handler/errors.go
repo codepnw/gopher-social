@@ -27,6 +27,11 @@ func notFoundResponse(c *gin.Context, err error) {
 	c.JSON(http.StatusNotFound, gin.H{"error": err.Error()})
 }
 
+func unauthorizedResponse(c *gin.Context, err error) {
+	logger.Warn(c, "unauthorized", err)
+	c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+}
+
 func responseData(c *gin.Context, status int, data any) {
 	c.JSON(status, gin.H{"data": data})
 }

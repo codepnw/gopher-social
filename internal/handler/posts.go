@@ -41,12 +41,13 @@ func (h *postHandler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
+	user := getUserFromContext(c)
+
 	post := &entity.Post{
 		Title:   payload.Title,
 		Content: payload.Content,
 		Tags:    payload.Tags,
-		// TODO: Change after auth
-		UserID: 1,
+		UserID:  user.ID,
 	}
 
 	if err := h.postRepo.Create(c, post); err != nil {

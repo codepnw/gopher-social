@@ -16,6 +16,7 @@ type UserRepository interface {
 	Activate(ctx context.Context, token string) error
 	CreateAndInvite(ctx context.Context, user *entity.User, token string, exp time.Duration) error
 	GetByID(ctx context.Context, id int64) (*entity.User, error)
+	GetByEmail(ctx context.Context, email string) (*entity.User, error)
 	Follow(ctx context.Context, followerID, userID int64) error
 	Unfollow(ctx context.Context, followerID, userID int64) error
 	Delete(ctx context.Context, userID int64) error
@@ -179,7 +180,7 @@ func (r *userRepository) deleteUserInvitations(ctx context.Context, tx *sql.Tx, 
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*entity.User, error) {
 	query := `
 		SELECT id, username, email, password, created_at 
-		FROM users WHERE id = $1
+		FROM users WHERE id = $1 AND is_active = true
 	`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
@@ -193,6 +194,34 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*entity.User, e
 		&user.CreatedAt,
 	)
 
+	if err != nil {
+		switch err {
+		case sql.ErrNoRows:
+			return nil, ErrNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
+func (r *userRepository) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
+	query := `
+		SELECT id, username, email, password, created_at FROM users
+		WHERE email = $1 AND is_active = true
+	`
+	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
+	defer cancel()
+
+	var user entity.User
+	err := r.db.QueryRowContext(ctx, query, email).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password,
+		&user.CreatedAt,
+	)
 	if err != nil {
 		switch err {
 		case sql.ErrNoRows:
@@ -225,7 +254,7 @@ func (r *userRepository) delete(ctx context.Context, tx *sql.Tx, userID int64) e
 
 	_, err := tx.ExecContext(ctx, "DELETE FROM users WHERE id = $1", userID)
 	if err != nil {
-		return  err
+		return err
 	}
 
 	return nil

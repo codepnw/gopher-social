@@ -3,16 +3,20 @@ package handler
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/codepnw/gopher-social/cmd/config"
+	"github.com/codepnw/gopher-social/internal/auth"
 	"github.com/codepnw/gopher-social/internal/entity"
 	"github.com/codepnw/gopher-social/internal/repository"
 	"github.com/codepnw/gopher-social/internal/utils/logger"
 	"github.com/codepnw/gopher-social/internal/utils/mailer"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 )
 
@@ -20,6 +24,7 @@ const userCtxKey string = "user"
 
 type UserHandler interface {
 	RegisterUserHandler(c *gin.Context)
+	CreateTokenHandler(c *gin.Context)
 	ActivateUserHandler(c *gin.Context)
 	GetUserHandler(c *gin.Context)
 	FollowUserHandler(c *gin.Context)
@@ -31,13 +36,15 @@ type userHandler struct {
 	cfg    config.Config
 	repo   repository.UserRepository
 	mailer mailer.MailtrapClient
+	auth   *auth.JWTAuthenticator
 }
 
-func NewUserHandler(cfg config.Config, repo repository.UserRepository, mailer mailer.MailtrapClient) UserHandler {
+func NewUserHandler(cfg config.Config, repo repository.UserRepository, mailer mailer.MailtrapClient, auth *auth.JWTAuthenticator) UserHandler {
 	return &userHandler{
 		cfg:    cfg,
 		repo:   repo,
 		mailer: mailer,
+		auth:   auth,
 	}
 }
 
@@ -111,6 +118,49 @@ func (h *userHandler) RegisterUserHandler(c *gin.Context) {
 	responseData(c, http.StatusCreated, userToken)
 }
 
+func (h *userHandler) CreateTokenHandler(c *gin.Context) {
+	var payload entity.CreateUserTokenPayload
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		badRequestResponse(c, err)
+		return
+	}
+
+	// fetch the user
+	user, err := h.repo.GetByEmail(c, payload.Email)
+	if err != nil {
+		switch err {
+		case repository.ErrNotFound:
+			unauthorizedResponse(c, err)
+		default:
+			internalServerError(c, err)
+		}
+		return
+	}
+
+	if err := user.ComparePassword(payload.Password); err != nil {
+		badRequestResponse(c, errors.New("invalid email or password"))
+		return
+	}
+
+	// generate token
+	claims := jwt.MapClaims{
+		"sub": user.ID,
+		"exp": time.Now().Add(h.cfg.Auth.JWTExp).Unix(),
+		"iat": time.Now().Unix(),
+		"nbf": time.Now().Unix(),
+		"iss": h.cfg.Auth.JWTIss,
+		"aud": h.cfg.Auth.JWTIss,
+	}
+
+	token, err := h.auth.GenerateToken(claims)
+	if err != nil {
+		internalServerError(c, err)
+		return
+	}
+
+	responseData(c, http.StatusOK, token)
+}
+
 func (h *userHandler) ActivateUserHandler(c *gin.Context) {
 	token := c.Param("token")
 
@@ -136,14 +186,13 @@ func (h *userHandler) GetUserHandler(c *gin.Context) {
 func (h *userHandler) FollowUserHandler(c *gin.Context) {
 	followerUser := getUserFromContext(c)
 
-	// TODO: revert back to auth userID
-	var payload entity.FollowUser
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	folleredID, err := strconv.ParseInt(c.Param("userID"), 10, 64)
+	if err != nil {
 		badRequestResponse(c, err)
 		return
 	}
 
-	if err := h.repo.Follow(c, followerUser.ID, payload.UserID); err != nil {
+	if err := h.repo.Follow(c, followerUser.ID, folleredID); err != nil {
 		switch err {
 		case repository.ErrConflict:
 			conflictResponse(c, err)
@@ -160,14 +209,13 @@ func (h *userHandler) FollowUserHandler(c *gin.Context) {
 func (h *userHandler) UnfollowUserHandler(c *gin.Context) {
 	unfollowedUser := getUserFromContext(c)
 
-	// TODO: revert back to auth userID
-	var payload entity.FollowUser
-	if err := c.ShouldBindJSON(&payload); err != nil {
+	folleredID, err := strconv.ParseInt(c.Param("userID"), 10, 64)
+	if err != nil {
 		badRequestResponse(c, err)
 		return
 	}
 
-	if err := h.repo.Unfollow(c, unfollowedUser.ID, payload.UserID); err != nil {
+	if err := h.repo.Unfollow(c, unfollowedUser.ID, folleredID); err != nil {
 		internalServerError(c, err)
 		return
 	}

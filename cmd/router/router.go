@@ -1,9 +1,14 @@
 package router
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/codepnw/gopher-social/internal/middleware"
+	"github.com/gin-gonic/gin"
+)
 
 func (app *Application) Routes() *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
+
+	mid := middleware.InitMiddleware()
 
 	r := gin.Default()
 	r.Use(gin.Logger())
@@ -11,16 +16,21 @@ func (app *Application) Routes() *gin.Engine {
 
 	v := r.Group("/" + app.Config.App.ApiVersion)
 
-	v.GET("/health", app.HealthCheckHandler)
+	authorized := v.Group("/", gin.BasicAuth(gin.Accounts{
+		app.Config.Auth.BasicUser: app.Config.Auth.BasicPassword,
+	}))
 
-	posts := v.Group("/posts")
+	authorized.GET("/health", app.HealthCheckHandler)
+	authorized.GET("/basic-logout", app.BasicAuthLogout)
+
+	postsAuth := v.Group("/posts", mid.AuthTokenMiddleware())
 	{
-		posts.POST("/", app.Store.Posts.CreatePostHandler)
+		postsAuth.POST("/", app.Store.Posts.CreatePostHandler)
 
-		postsID := posts.Group("/:id")
+		postsID := postsAuth.Group("/:id")
 		{
 			// Middleware
-			postsID.Use(app.Store.Posts.PostContextMiddleware())
+			// postsID.Use(app.Store.Posts.PostContextMiddleware())
 
 			postsID.GET("/", app.Store.Posts.GetPostHandler)
 			postsID.PATCH("/", app.Store.Posts.UpdatePostHandler)
@@ -32,21 +42,22 @@ func (app *Application) Routes() *gin.Engine {
 	{
 		users.PUT("/activate/:token", app.Store.Users.ActivateUserHandler)
 
-		usersID := users.Group("/:id")
+		usersAuth := users.Group("/:id", mid.AuthTokenMiddleware())
 		{
 			// Middleware
-			usersID.Use(app.Store.Users.UserContextMiddleware())
+			// usersAuth.Use(app.Store.Users.UserContextMiddleware())
 
-			usersID.GET("/", app.Store.Users.GetUserHandler)
-			usersID.PUT("/follow", app.Store.Users.FollowUserHandler)
-			usersID.PUT("/unfollow", app.Store.Users.UnfollowUserHandler)
+			usersAuth.GET("/", app.Store.Users.GetUserHandler)
+			usersAuth.PUT("/follow", app.Store.Users.FollowUserHandler)
+			usersAuth.PUT("/unfollow", app.Store.Users.UnfollowUserHandler)
 		}
-		users.GET("/feed", app.Store.Posts.GetUserFeedHandler)
+		usersAuth.GET("/feed", app.Store.Posts.GetUserFeedHandler)
 	}
 
 	auth := v.Group("/auth")
 	{
 		auth.POST("/register", app.Store.Users.RegisterUserHandler)
+		auth.POST("/token", app.Store.Users.CreateTokenHandler)
 	}
 
 	return r

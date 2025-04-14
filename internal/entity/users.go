@@ -22,10 +22,6 @@ type UserReq struct {
 	Password string `json:"-"`
 }
 
-type FollowUser struct {
-	UserID int64 `json:"user_id"`
-}
-
 type Follower struct {
 	UserID     int64  `json:"user_id"`
 	FollowerID int64  `json:"follower_id"`
@@ -40,4 +36,8 @@ func (u *User) HashPassword(password string) error {
 
 	u.Password = string(hashed)
 	return nil
+}
+
+func (u *User) ComparePassword(text string) error {
+	return bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(text))
 }
