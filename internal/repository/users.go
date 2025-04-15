@@ -32,8 +32,8 @@ func NewUserRepository(db *sql.DB) UserRepository {
 
 func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *entity.User) error {
 	query := `
-		INSERT INTO users (username, email, password)
-		VALUES ($1, $2, $3) RETURNING id, created_at
+		INSERT INTO users (username, email, password, role_id)
+		VALUES ($1, $2, $3, $4) RETURNING id, created_at
 	`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
@@ -44,6 +44,7 @@ func (r *userRepository) Create(ctx context.Context, tx *sql.Tx, user *entity.Us
 		user.Username,
 		user.Email,
 		user.Password,
+		user.RoleID,
 	).Scan(&user.ID, &user.CreatedAt)
 
 	if err != nil {
@@ -179,8 +180,10 @@ func (r *userRepository) deleteUserInvitations(ctx context.Context, tx *sql.Tx, 
 
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*entity.User, error) {
 	query := `
-		SELECT id, username, email, password, created_at 
-		FROM users WHERE id = $1 AND is_active = true
+		SELECT users.id, username, email, password, created_at, roles.* 
+		FROM users
+		JOIN roles ON (users.role_id = roles.id)
+		WHERE users.id = $1 AND is_active = true
 	`
 	ctx, cancel := context.WithTimeout(ctx, QueryTimeout)
 	defer cancel()
@@ -192,6 +195,10 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*entity.User, e
 		&user.Email,
 		&user.Password,
 		&user.CreatedAt,
+		&user.Role.ID,
+		&user.Role.Name,
+		&user.Role.Level,
+		&user.Role.Description,
 	)
 
 	if err != nil {

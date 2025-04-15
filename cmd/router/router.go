@@ -30,11 +30,11 @@ func (app *Application) Routes() *gin.Engine {
 		postsID := postsAuth.Group("/:id")
 		{
 			// Middleware
-			// postsID.Use(app.Store.Posts.PostContextMiddleware())
+			postsID.Use(app.Store.Posts.PostContextMiddleware())
 
 			postsID.GET("/", app.Store.Posts.GetPostHandler)
-			postsID.PATCH("/", app.Store.Posts.UpdatePostHandler)
-			postsID.DELETE("/", app.Store.Posts.DeletePostHandler)
+			postsID.PATCH("/", mid.CheckPostOwnership("staff"), app.Store.Posts.UpdatePostHandler)
+			postsID.DELETE("/", mid.CheckPostOwnership("admin"), app.Store.Posts.DeletePostHandler)
 		}
 	}
 
@@ -45,7 +45,7 @@ func (app *Application) Routes() *gin.Engine {
 		usersAuth := users.Group("/:id", mid.AuthTokenMiddleware())
 		{
 			// Middleware
-			// usersAuth.Use(app.Store.Users.UserContextMiddleware())
+			usersAuth.Use(app.Store.Users.UserContextMiddleware())
 
 			usersAuth.GET("/", app.Store.Users.GetUserHandler)
 			usersAuth.PUT("/follow", app.Store.Users.FollowUserHandler)

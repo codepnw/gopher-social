@@ -41,7 +41,7 @@ func (h *postHandler) CreatePostHandler(c *gin.Context) {
 		return
 	}
 
-	user := getUserFromContext(c)
+	user := GetUserFromContext(c)
 
 	post := &entity.Post{
 		Title:   payload.Title,
@@ -59,7 +59,7 @@ func (h *postHandler) CreatePostHandler(c *gin.Context) {
 }
 
 func (h *postHandler) GetPostHandler(c *gin.Context) {
-	post := getPostFromContext(c)
+	post := GetPostFromContext(c)
 
 	// Comments
 	comments, err := h.commentRepo.GetByPostID(c, post.ID)
@@ -91,7 +91,7 @@ func (h *postHandler) DeletePostHandler(c *gin.Context) {
 }
 
 func (h *postHandler) UpdatePostHandler(c *gin.Context) {
-	post := getPostFromContext(c)
+	post := GetPostFromContext(c)
 
 	var payload entity.UpdatePostPayload
 	if err := c.ShouldBindJSON(&payload); err != nil {
@@ -168,7 +168,7 @@ func (h *postHandler) PostContextMiddleware() gin.HandlerFunc {
 	}
 }
 
-func getPostFromContext(c *gin.Context) *entity.Post {
+func GetPostFromContext(c *gin.Context) *entity.Post {
 	post, _ := c.Get(postCtxKey)
 	return post.(*entity.Post)
 }

@@ -152,6 +152,7 @@ func generateUsers(num int) []*entity.User {
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
 			Password: "123123",
+			RoleID: 1,
 		}
 	}
 

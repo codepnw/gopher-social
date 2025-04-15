@@ -1,19 +1,23 @@
 package middleware
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/codepnw/gopher-social/internal/auth"
+	"github.com/codepnw/gopher-social/internal/entity"
+	"github.com/codepnw/gopher-social/internal/handler"
 	"github.com/codepnw/gopher-social/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type middleware struct {
-	auth auth.JWTAuthenticator
+	auth  auth.JWTAuthenticator
+	store store.Storage
 }
 
 func InitMiddleware() *middleware {
@@ -57,4 +61,40 @@ func (m *middleware) AuthTokenMiddleware() gin.HandlerFunc {
 		c.Set("user", user)
 		c.Next()
 	}
+}
+
+func (m *middleware) CheckPostOwnership(role string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		user := handler.GetUserFromContext(c)
+		post := handler.GetPostFromContext(c)
+
+		// check user post
+		if post.UserID == user.ID {
+			c.Next()
+			return
+		}
+
+		// role precedence check
+		allowed, err := m.checkRolePrecedence(c, user, role)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		if !allowed {
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+			return
+		}
+
+		c.Next()
+	}
+}
+
+func (m *middleware) checkRolePrecedence(ctx context.Context, user *entity.User, roleName string) (bool, error) {
+	role, err := store.GetRoleRepo().GetByName(ctx, roleName)
+	if err != nil {
+		return false, err
+	}
+
+	return user.Role.Level >= role.Level, nil
 }

@@ -178,13 +178,13 @@ func (h *userHandler) ActivateUserHandler(c *gin.Context) {
 }
 
 func (h *userHandler) GetUserHandler(c *gin.Context) {
-	user := getUserFromContext(c)
+	user := GetUserFromContext(c)
 
 	responseData(c, http.StatusOK, user)
 }
 
 func (h *userHandler) FollowUserHandler(c *gin.Context) {
-	followerUser := getUserFromContext(c)
+	followerUser := GetUserFromContext(c)
 
 	folleredID, err := strconv.ParseInt(c.Param("userID"), 10, 64)
 	if err != nil {
@@ -207,7 +207,7 @@ func (h *userHandler) FollowUserHandler(c *gin.Context) {
 }
 
 func (h *userHandler) UnfollowUserHandler(c *gin.Context) {
-	unfollowedUser := getUserFromContext(c)
+	unfollowedUser := GetUserFromContext(c)
 
 	folleredID, err := strconv.ParseInt(c.Param("userID"), 10, 64)
 	if err != nil {
@@ -248,7 +248,7 @@ func (h *userHandler) UserContextMiddleware() gin.HandlerFunc {
 	}
 }
 
-func getUserFromContext(c *gin.Context) *entity.User {
+func GetUserFromContext(c *gin.Context) *entity.User {
 	user, _ := c.Get(userCtxKey)
 	return user.(*entity.User)
 }

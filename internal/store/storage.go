@@ -11,6 +11,7 @@ import (
 )
 
 var userRepo repository.UserRepository
+var roleRepo repository.RoleRepository
 
 type Storage struct {
 	Posts handler.PostsHandler
@@ -21,6 +22,7 @@ func NewStorage(db *sql.DB, cfg config.Config, mailer mailer.MailtrapClient) Sto
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	userRepo = repository.NewUserRepository(db)
+	roleRepo = repository.NewRoleRepository(db)
 
 	jwtAuth := auth.NewJWTAuthenticator(cfg.Auth.JWTSecret, "", "")
 
@@ -32,4 +34,8 @@ func NewStorage(db *sql.DB, cfg config.Config, mailer mailer.MailtrapClient) Sto
 
 func GetUserRepo() repository.UserRepository {
 	return userRepo
+}
+
+func GetRoleRepo() repository.RoleRepository {
+	return roleRepo
 }
