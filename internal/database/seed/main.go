@@ -9,8 +9,8 @@ import (
 
 	"github.com/codepnw/gopher-social/internal/database"
 	"github.com/codepnw/gopher-social/internal/entity"
-	"github.com/codepnw/gopher-social/internal/utils/env"
 	"github.com/codepnw/gopher-social/internal/repository"
+	"github.com/codepnw/gopher-social/internal/utils/env"
 	"github.com/joho/godotenv"
 )
 
@@ -122,7 +122,7 @@ func seed(db *sql.DB) {
 			return
 		}
 	}
-	
+
 	tx.Commit()
 
 	posts := generatePosts(50, users)
@@ -152,7 +152,6 @@ func generateUsers(num int) []*entity.User {
 			Username: usernames[i%len(usernames)] + fmt.Sprintf("%d", i),
 			Email:    usernames[i%len(usernames)] + fmt.Sprintf("%d", i) + "@example.com",
 			Password: "123123",
-			RoleID: 1,
 		}
 	}
 
@@ -165,8 +164,8 @@ func generatePosts(num int, users []*entity.User) []*entity.Post {
 		user := users[rand.IntN(len(users))]
 
 		posts[i] = &entity.Post{
-			UserID: user.ID,
-			Title: titles[rand.IntN(len(titles))],
+			UserID:  user.ID,
+			Title:   titles[rand.IntN(len(titles))],
 			Content: contents[rand.IntN(len(contents))],
 			Tags: []string{
 				tags[rand.IntN(len(tags))],
@@ -182,8 +181,8 @@ func generateComments(num int, users []*entity.User, posts []*entity.Post) []*en
 	cms := make([]*entity.Comment, num)
 	for i := 0; i < num; i++ {
 		cms[i] = &entity.Comment{
-			PostID: posts[rand.IntN(len(posts))].ID,
-			UserID: users[rand.IntN(len(users))].ID,
+			PostID:  posts[rand.IntN(len(posts))].ID,
+			UserID:  users[rand.IntN(len(users))].ID,
 			Content: comments[rand.IntN(len(comments))],
 		}
 	}

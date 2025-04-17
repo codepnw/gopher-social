@@ -29,3 +29,6 @@ go.work
 dev.env
 tmp
 note.txt
+internal/domains
+internal/router
+internal/utils/response
