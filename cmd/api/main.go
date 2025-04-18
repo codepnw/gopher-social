@@ -7,9 +7,11 @@ import (
 	"github.com/codepnw/gopher-social/cmd/router"
 	"github.com/codepnw/gopher-social/internal/database"
 	"github.com/codepnw/gopher-social/internal/store"
+	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/codepnw/gopher-social/internal/utils/logger"
 	"github.com/codepnw/gopher-social/internal/utils/mailer"
 	"github.com/joho/godotenv"
+	"github.com/redis/go-redis/v9"
 )
 
 const envPath = "dev.env"
@@ -36,6 +38,15 @@ func main() {
 	defer db.Close()
 	logger.Info("database connected...")
 
+	// Cache
+	var rdb *redis.Client
+	if cfg.Redis.Enabled {
+		rdb = cache.NewRedisClient(cfg.Redis.Addr, cfg.Redis.Pw, cfg.Redis.DB)
+		logger.Info("redis cache connected....")
+	}
+
+	cacheStorage := cache.NewRedisStorage(rdb)
+
 	// Mailer
 	mailer, err := mailer.NewMailTrapClient(cfg.Mail.ApiKey, cfg.Mail.FromEmail)
 	if err != nil {
@@ -43,7 +54,7 @@ func main() {
 	}
 
 	// Storage
-	store := store.NewStorage(db, cfg, mailer)
+	store := store.NewStorage(db, cfg, mailer, cacheStorage)
 
 	app := &router.Application{
 		Config: cfg,
@@ -51,5 +62,5 @@ func main() {
 		Logger: logger,
 	}
 
-	logger.Fatal(app.Run(app.Routes()))
+	logger.Fatal(app.Run(app.Routes(cacheStorage)))
 }

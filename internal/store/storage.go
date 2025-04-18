@@ -7,6 +7,7 @@ import (
 	"github.com/codepnw/gopher-social/internal/auth"
 	"github.com/codepnw/gopher-social/internal/handler"
 	"github.com/codepnw/gopher-social/internal/repository"
+	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/codepnw/gopher-social/internal/utils/mailer"
 )
 
@@ -18,7 +19,7 @@ type Storage struct {
 	Users handler.UserHandler
 }
 
-func NewStorage(db *sql.DB, cfg config.Config, mailer mailer.MailtrapClient) Storage {
+func NewStorage(db *sql.DB, cfg config.Config, mailer mailer.MailtrapClient, cacheStorage cache.Storage) Storage {
 	postRepo := repository.NewPostRepository(db)
 	commentRepo := repository.NewCommentRepository(db)
 	userRepo = repository.NewUserRepository(db)
@@ -28,7 +29,7 @@ func NewStorage(db *sql.DB, cfg config.Config, mailer mailer.MailtrapClient) Sto
 
 	return Storage{
 		Posts: handler.NewPostsHandler(postRepo, commentRepo),
-		Users: handler.NewUserHandler(cfg, userRepo, mailer, jwtAuth),
+		Users: handler.NewUserHandler(cfg, userRepo, mailer, jwtAuth, cacheStorage),
 	}
 }
 

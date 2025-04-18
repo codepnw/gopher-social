@@ -13,6 +13,7 @@ import (
 	"github.com/codepnw/gopher-social/internal/auth"
 	"github.com/codepnw/gopher-social/internal/entity"
 	"github.com/codepnw/gopher-social/internal/repository"
+	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/codepnw/gopher-social/internal/utils/logger"
 	"github.com/codepnw/gopher-social/internal/utils/mailer"
 	"github.com/gin-gonic/gin"
@@ -37,14 +38,16 @@ type userHandler struct {
 	repo   repository.UserRepository
 	mailer mailer.MailtrapClient
 	auth   *auth.JWTAuthenticator
+	redis  cache.Storage
 }
 
-func NewUserHandler(cfg config.Config, repo repository.UserRepository, mailer mailer.MailtrapClient, auth *auth.JWTAuthenticator) UserHandler {
+func NewUserHandler(cfg config.Config, repo repository.UserRepository, mailer mailer.MailtrapClient, auth *auth.JWTAuthenticator, redis cache.Storage) UserHandler {
 	return &userHandler{
 		cfg:    cfg,
 		repo:   repo,
 		mailer: mailer,
 		auth:   auth,
+		redis:  redis,
 	}
 }
 

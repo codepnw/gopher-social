@@ -7,10 +7,18 @@ import (
 )
 
 type Config struct {
-	App  AppConfig
-	DB   DBConfig
-	Mail MailConfig
-	Auth AuthConfig
+	App   AppConfig
+	DB    DBConfig
+	Mail  MailConfig
+	Auth  AuthConfig
+	Redis RedisConfig
+}
+
+type RedisConfig struct {
+	Addr    string
+	Pw      string
+	DB      int
+	Enabled bool
 }
 
 type AuthConfig struct {
@@ -60,6 +68,13 @@ func InitConfig() Config {
 		MaxIdleTime:  env.GetString("DB_MAX_IDLE_TIME", "15m"),
 	}
 
+	redis := RedisConfig{
+		Addr:    env.GetString("REDIS_ADDR", "localhost:6379"),
+		Pw:      env.GetString("REDIS_PW", ""),
+		DB:      env.GetInt("REDIS_PW", 0),
+		Enabled: env.GetBool("REDIS_ENABLED", false),
+	}
+
 	mail := MailConfig{
 		Exp:       time.Hour * 24 * 3, // 3 days,
 		ApiKey:    env.GetString("MAILTRAP_API_KEY", ""),
@@ -75,9 +90,10 @@ func InitConfig() Config {
 	}
 
 	return Config{
-		App:  app,
-		DB:   db,
-		Mail: mail,
-		Auth: auth,
+		App:   app,
+		DB:    db,
+		Mail:  mail,
+		Auth:  auth,
+		Redis: redis,
 	}
 }

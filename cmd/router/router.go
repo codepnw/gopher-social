@@ -2,13 +2,14 @@ package router
 
 import (
 	"github.com/codepnw/gopher-social/internal/middleware"
+	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/gin-gonic/gin"
 )
 
-func (app *Application) Routes() *gin.Engine {
+func (app *Application) Routes(redis cache.Storage) *gin.Engine {
 	gin.SetMode(gin.ReleaseMode)
 
-	mid := middleware.InitMiddleware()
+	mid := middleware.InitMiddleware(redis)
 
 	r := gin.Default()
 	r.Use(gin.Logger())

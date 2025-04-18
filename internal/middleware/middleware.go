@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,17 +12,21 @@ import (
 	"github.com/codepnw/gopher-social/internal/entity"
 	"github.com/codepnw/gopher-social/internal/handler"
 	"github.com/codepnw/gopher-social/internal/store"
+	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 type middleware struct {
-	auth  auth.JWTAuthenticator
-	store store.Storage
+	auth auth.JWTAuthenticator
+	// store store.Storage
+	redis cache.Storage
 }
 
-func InitMiddleware() *middleware {
-	return &middleware{}
+func InitMiddleware(redis cache.Storage) *middleware {
+	return &middleware{
+		redis: redis,
+	}
 }
 
 func (m *middleware) AuthTokenMiddleware() gin.HandlerFunc {
@@ -52,7 +57,29 @@ func (m *middleware) AuthTokenMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		user, err := store.GetUserRepo().GetByID(c, userID)
+		// // get user from cache
+		// user, err := m.redis.Users.Get(c, userID)
+		// if err != nil {
+		// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// 	return
+		// }
+
+		// if user == nil {
+		// 	// get user from db
+		// 	user, err = store.GetUserRepo().GetByID(c, userID)
+		// 	if err != nil {
+		// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// 		return
+		// 	}
+
+		// 	// set user
+		// 	if err := m.redis.Users.Set(c, user); err != nil {
+		// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		// 		return
+		// 	}
+		// }
+
+		user, err := m.getUser(c, userID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
@@ -97,4 +124,29 @@ func (m *middleware) checkRolePrecedence(ctx context.Context, user *entity.User,
 	}
 
 	return user.Role.Level >= role.Level, nil
+}
+
+func (m *middleware) getUser(ctx context.Context, userID int64) (*entity.User, error) {
+	// get user from cache
+	user, err := m.redis.Users.Get(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Println("user 1", user)
+
+	if user == nil {
+		// get user from db
+		user, err = store.GetUserRepo().GetByID(ctx, userID)
+		if err != nil {
+			return nil, err
+		}
+
+		// set user
+		if err := m.redis.Users.Set(ctx, user); err != nil {
+			return nil, err
+		}
+	}
+
+	return user, nil
 }

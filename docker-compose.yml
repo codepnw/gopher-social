@@ -12,5 +12,26 @@ services:
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_USER=${DB_USER}
       - POSTGRES_DB=${DB_NAME}
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: gopher-social
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    command: redis-server --save 60 1 --loglevel warning
+
+  redis-commander:
+    container_name: redis-commander
+    hostname: redis-commander
+    image: rediscommander/redis-commander:latest
+    restart: unless-stopped
+    environment:
+    - REDIS_HOSTS=redis
+    ports:
+    - "127.0.0.1:8081:8081"
+    depends_on:
+      - redis
+
 volumes:
   db-data:
