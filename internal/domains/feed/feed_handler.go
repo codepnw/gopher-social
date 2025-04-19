@@ -1,6 +1,7 @@
 package feed
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
@@ -42,6 +43,7 @@ func (h *handler) GetUserFeedHandler(c *gin.Context) {
 	}
 
 	// TODO: feed empty fix later
+	log.Println("Feed =======", userID, feed)
 
 	response.ResponseData(c, http.StatusOK, feed)
 }

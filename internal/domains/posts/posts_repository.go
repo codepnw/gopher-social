@@ -4,7 +4,7 @@ import (
 	"context"
 	"database/sql"
 
-	"github.com/codepnw/gopher-social/internal/entity"
+	"github.com/codepnw/gopher-social/internal/domains/feed"
 	"github.com/lib/pq"
 )
 
@@ -103,7 +103,7 @@ func (r *postRepository) Update(ctx context.Context, post *Post) error {
 	return nil
 }
 
-func (r *postRepository) GetUserFeed(ctx context.Context, userID int64, fq entity.PaginatedFeedQuery) ([]entity.PostWithMetaData, error) {
+func (r *postRepository) GetUserFeed(ctx context.Context, userID int64, fq feed.PaginatedFeedQuery) ([]feed.PostWithMetaData, error) {
 	query := `
 		SELECT 
 			p.id, p.user_id, p.title, p.content, p.created_at, p.version, p.tags,
@@ -126,9 +126,9 @@ func (r *postRepository) GetUserFeed(ctx context.Context, userID int64, fq entit
 	}
 	defer rows.Close()
 
-	var feed []entity.PostWithMetaData
+	var feed []feed.PostWithMetaData
 	for rows.Next() {
-		var p entity.PostWithMetaData
+		var p feed.PostWithMetaData
 		err := rows.Scan(
 			&p.ID,
 			&p.UserID,

@@ -7,6 +7,7 @@ import (
 
 	"github.com/codepnw/gopher-social/cmd/config"
 	"github.com/codepnw/gopher-social/internal/domains/commons"
+	"github.com/lib/pq"
 )
 
 type UserUsecase interface {
@@ -15,17 +16,18 @@ type UserUsecase interface {
 	CreateAndInvite(ctx context.Context, user *UserReq, token string, exp time.Duration) error
 	GetByID(ctx context.Context, id int64) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
-	// Follow(ctx context.Context, followerID, userID int64) error
-	// Unfollow(ctx context.Context, followerID, userID int64) error
+	Follow(ctx context.Context, followerID, userID int64) error
+	Unfollow(ctx context.Context, followerID, userID int64) error
 	Delete(ctx context.Context, userID int64) error
 }
 
 type usecase struct {
+	db     *sql.DB
 	repo   UserRepository
 	config config.Config
 }
 
-func NewUserUsecase(repo UserRepository, config config.Config) UserUsecase {
+func NewUserUsecase(db *sql.DB, repo UserRepository, config config.Config) UserUsecase {
 	return &usecase{
 		repo:   repo,
 		config: config,
@@ -52,7 +54,9 @@ func (uc *usecase) Create(ctx context.Context, user *UserReq) (*User, error) {
 	ctx, cancel := context.WithTimeout(ctx, commons.ContextQueryTimeout)
 	defer cancel()
 
-	err := uc.repo.Create(ctx, &u)
+	tx, _ := uc.db.BeginTx(ctx, nil)
+
+	err := uc.repo.Create(ctx, tx, &u)
 	if err != nil {
 		switch {
 		case err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"`:
@@ -86,7 +90,7 @@ func (uc *usecase) CreateAndInvite(ctx context.Context, user *UserReq, token str
 			Name: "user",
 		},
 	}
-	
+
 	err := uc.repo.CreateAndInvite(ctx, u, token, uc.config.Auth.JWTExp)
 	if err != nil {
 		return err
@@ -134,4 +138,23 @@ func (uc *usecase) Delete(ctx context.Context, userID int64) error {
 	defer cancel()
 
 	return uc.repo.Delete(ctx, userID)
+}
+
+func (uc *usecase) Follow(ctx context.Context, followerID, userID int64) error {
+	ctx, cancel := context.WithTimeout(ctx, commons.ContextQueryTimeout)
+	defer cancel()
+
+	if err := uc.repo.Follow(ctx, followerID, userID); err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
+			return commons.ErrConflict
+		}
+	}
+
+	return nil
+}
+func (uc *usecase) Unfollow(ctx context.Context, followerID, userID int64) error {
+	ctx, cancel := context.WithTimeout(ctx, commons.ContextQueryTimeout)
+	defer cancel()
+
+	return uc.repo.Unfollow(ctx, followerID, userID)
 }

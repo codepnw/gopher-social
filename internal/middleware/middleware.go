@@ -9,9 +9,10 @@ import (
 	"strings"
 
 	"github.com/codepnw/gopher-social/internal/auth"
-	"github.com/codepnw/gopher-social/internal/entity"
-	"github.com/codepnw/gopher-social/internal/handler"
-	"github.com/codepnw/gopher-social/internal/store"
+	"github.com/codepnw/gopher-social/internal/domains/users"
+	// "github.com/codepnw/gopher-social/internal/entity"
+	// "github.com/codepnw/gopher-social/internal/handler"
+	// "github.com/codepnw/gopher-social/internal/store"
 	"github.com/codepnw/gopher-social/internal/store/cache"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
@@ -57,28 +58,6 @@ func (m *middleware) AuthTokenMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// // get user from cache
-		// user, err := m.redis.Users.Get(c, userID)
-		// if err != nil {
-		// 	c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		// 	return
-		// }
-
-		// if user == nil {
-		// 	// get user from db
-		// 	user, err = store.GetUserRepo().GetByID(c, userID)
-		// 	if err != nil {
-		// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		// 		return
-		// 	}
-
-		// 	// set user
-		// 	if err := m.redis.Users.Set(c, user); err != nil {
-		// 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
-		// 		return
-		// 	}
-		// }
-
 		user, err := m.getUser(c, userID)
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -92,41 +71,45 @@ func (m *middleware) AuthTokenMiddleware() gin.HandlerFunc {
 
 func (m *middleware) CheckPostOwnership(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		user := handler.GetUserFromContext(c)
-		post := handler.GetPostFromContext(c)
+		// user := handler.GetUserFromContext(c)
+		// post := handler.GetPostFromContext(c)
 
+		// TODO
 		// check user post
-		if post.UserID == user.ID {
-			c.Next()
-			return
-		}
+		// if post.UserID == user.ID {
+		// 	c.Next()
+		// 	return
+		// }
 
+		// TODO
 		// role precedence check
-		allowed, err := m.checkRolePrecedence(c, user, role)
-		if err != nil {
-			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-			return
-		}
+		// allowed, err := m.checkRolePrecedence(c, user, role)
+		// if err != nil {
+		// 	c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		// 	return
+		// }
 
-		if !allowed {
-			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-			return
-		}
+		// if !allowed {
+		// 	c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "forbidden"})
+		// 	return
+		// }
 
 		c.Next()
 	}
 }
 
-func (m *middleware) checkRolePrecedence(ctx context.Context, user *entity.User, roleName string) (bool, error) {
-	role, err := store.GetRoleRepo().GetByName(ctx, roleName)
-	if err != nil {
-		return false, err
-	}
+func (m *middleware) checkRolePrecedence(ctx context.Context, user *users.User, roleName string) (bool, error) {
+	// role, err := store.GetRoleRepo().GetByName(ctx, roleName)
+	// if err != nil {
+	// 	return false, err
+	// }
 
-	return user.Role.Level >= role.Level, nil
+	// return user.Role.Level >= role.Level, nil
+	// TODO:
+	return true, nil
 }
 
-func (m *middleware) getUser(ctx context.Context, userID int64) (*entity.User, error) {
+func (m *middleware) getUser(ctx context.Context, userID int64) (*users.User, error) {
 	// get user from cache
 	user, err := m.redis.Users.Get(ctx, userID)
 	if err != nil {
@@ -136,11 +119,12 @@ func (m *middleware) getUser(ctx context.Context, userID int64) (*entity.User, e
 	log.Println("user 1", user)
 
 	if user == nil {
+		// TODO:
 		// get user from db
-		user, err = store.GetUserRepo().GetByID(ctx, userID)
-		if err != nil {
-			return nil, err
-		}
+		// user, err = store.GetUserRepo().GetByID(ctx, userID)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		// set user
 		if err := m.redis.Users.Set(ctx, user); err != nil {

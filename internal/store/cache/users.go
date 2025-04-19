@@ -7,7 +7,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/codepnw/gopher-social/internal/entity"
+	"github.com/codepnw/gopher-social/internal/domains/users"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,7 +17,7 @@ type UserStore struct {
 
 const UserExpTime = time.Minute
 
-func (s *UserStore) Get(ctx context.Context, userID int64) (*entity.User, error) {
+func (s *UserStore) Get(ctx context.Context, userID int64) (*users.User, error) {
 	cacheKey := fmt.Sprintf("user-%v", userID)
 
 	log.Println("cache key", cacheKey)
@@ -29,7 +29,7 @@ func (s *UserStore) Get(ctx context.Context, userID int64) (*entity.User, error)
 		return nil, err
 	}
 
-	var user entity.User
+	var user users.User
 	if data != "" {
 		if err := json.Unmarshal([]byte(data), &user); err != nil {
 			return nil, err
@@ -39,7 +39,7 @@ func (s *UserStore) Get(ctx context.Context, userID int64) (*entity.User, error)
 	return &user, nil
 }
 
-func (s *UserStore) Set(ctx context.Context, user *entity.User) error {
+func (s *UserStore) Set(ctx context.Context, user *users.User) error {
 	cacheKey := fmt.Sprintf("user-%v", user.ID)
 
 	json, err := json.Marshal(user)

@@ -8,19 +8,18 @@ import (
 	"time"
 
 	"github.com/codepnw/gopher-social/internal/domains/commons"
-	"github.com/lib/pq"
 )
 
 type UserRepository interface {
-	Create(ctx context.Context, user *User) error
+	Create(ctx context.Context, tx *sql.Tx, user *User) error
 	Activate(ctx context.Context, token string) error
 	CreateAndInvite(ctx context.Context, user *User, token string, exp time.Duration) error
 	GetByID(ctx context.Context, id int64) (*User, error)
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	Delete(ctx context.Context, userID int64) error
 
-	// Follow(ctx context.Context, followerID, userID int64) error
-	// Unfollow(ctx context.Context, followerID, userID int64) error
+	Follow(ctx context.Context, followerID, userID int64) error
+	Unfollow(ctx context.Context, followerID, userID int64) error
 }
 
 type repository struct {
@@ -31,15 +30,13 @@ func NewUserRepository(db *sql.DB) UserRepository {
 	return &repository{db: db}
 }
 
-func (r *repository) Create(ctx context.Context, user *User) error {
+func (r *repository) Create(ctx context.Context, tx *sql.Tx, user *User) error {
 	query := `
 		INSERT INTO users (username, email, password, role_id)
 		VALUES ($1, $2, $3, (SELECT id FROM roles WHERE name = $4)) 
 		RETURNING id, created_at
 	`
-	tx, _ := r.db.BeginTx(ctx, nil)
-
-	err := tx.QueryRowContext(
+	err := r.db.QueryRowContext(
 		ctx,
 		query,
 		user.Username,
@@ -58,7 +55,7 @@ func (r *repository) Create(ctx context.Context, user *User) error {
 func (r *repository) CreateAndInvite(ctx context.Context, user *User, token string, invitationExp time.Duration) error {
 	return commons.WithTransaction(ctx, r.db, func(tx *sql.Tx) error {
 		// create user
-		if err := r.Create(ctx, user); err != nil {
+		if err := r.Create(ctx, tx, user); err != nil {
 			return err
 		}
 
@@ -235,9 +232,7 @@ func (r *repository) Follow(ctx context.Context, followerID, userID int64) error
 
 	_, err := r.db.ExecContext(ctx, query, userID, followerID)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" {
-			return commons.ErrConflict
-		}
+		return err
 	}
 
 	return nil

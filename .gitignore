@@ -26,9 +26,11 @@ go.work
 
 # End of https://www.toptal.com/developers/gitignore/api/go
 
+.vscode
 dev.env
 tmp
 note.txt
-internal/domains
-internal/router
-internal/utils/response
+# internal/domains
+# internal/router
+# internal/utils/response
+cmd/api

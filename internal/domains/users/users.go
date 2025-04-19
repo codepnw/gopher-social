@@ -8,7 +8,7 @@ import (
 
 func InitUserDomain(db *sql.DB, cfg config.Config) UserHandler {
 	repo := NewUserRepository(db)
-	uc := NewUserUsecase(repo, cfg)
+	uc := NewUserUsecase(db, repo, cfg)
 	hdl := NewUserHandler(uc)
 
 	return hdl
